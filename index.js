@@ -32,7 +32,7 @@ function shuffle(array) {
 
 // Fetch N random Pokemon sprites
 async function getPokemonSprites(n) {
-  // 1) Pull & shuffle the full Pokémon list
+  // Pull & shuffle the full Pokémon list
   const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1500');
   const { results } = await res.json();
   const shuffled = shuffle(results);
@@ -66,7 +66,7 @@ async function getPokemonSprites(n) {
       // it loaded successfully—accept it
       urls.push(url);
     } catch (e) {
-      // any network / JSON error → skip
+      // any network / JSON error then skip it
       continue;
     }
   }
@@ -92,7 +92,7 @@ function checkWin() {
   if (matchedPairs === totalPairs) {
     clearInterval(timerInterval);
     setTimeout(() => {
-      alert('🎉 You win! 🎉');
+      showModal('Congratulations you won!');
       endGame();
     }, 100);
   }
@@ -107,8 +107,8 @@ function startTimer(limit) {
     remainingTime--;
     if (remainingTime < 0) {
       clearInterval(timerInterval);
-      alert('💥 Game over! Time’s up.');
-      $('.card').off('click');
+      $('.card').off('click');    // freeze board
+      showModal('Game over! Time’s up.');
       endGame();
       return;
     }
@@ -164,7 +164,7 @@ function onCardClick() {
 async function setup() {
   const numPairs = parseInt($('#difficulty').val(), 10);
 
-  // assign cols-3 or cols-6 so your CSS picks the right layout
+  // assign cols-3 or cols-6 and CSS picks the right layout
   $('#game_grid')
     .removeClass('cols-3 cols-6')
     .addClass(numPairs === 3 ? 'cols-3' : 'cols-6');
@@ -209,15 +209,29 @@ async function setup() {
   $('#powerup-btn').prop('disabled', false);
 }
 
-// DOM Ready: wire buttons 
+// show our themed modal
+function showModal(msg) {
+  $('#modal-message').text(msg);
+  $('#modal-overlay').removeClass('hidden');
+}
+
+// hide it again
+function hideModal() {
+  $('#modal-overlay').addClass('hidden');
+}
 
 $(document).ready(() => {
+  // bind the OK button *once* at startup:
+  $('#modal-ok').on('click', hideModal);
+
   $('#start-btn').on('click', async () => {
+    // if a modal was left open, close it
+    hideModal();
+
     $('#start-btn, #difficulty').prop('disabled', true);
 
     await setup();
 
-    // now that #game_grid has real cards, show it
     $('#game_grid').fadeIn(200);
 
     const n = +$('#difficulty').val();
@@ -225,8 +239,11 @@ $(document).ready(() => {
   });
 
   $('#reset-btn').on('click', async () => {
+    hideModal();
+
     await setup();
     $('#game_grid').fadeIn(200);
+
     const n = +$('#difficulty').val();
     startTimer(TIME_LIMITS[n]);
   });
@@ -238,7 +255,7 @@ $(document).ready(() => {
   $('#powerup-btn').on('click', () => {
     if (usedPowerup) return;
     usedPowerup = true;
-    $('#powerup-btn').prop('disabled', true);    // optional: disable the button
+    $('#powerup-btn').prop('disabled', true);
 
     // grab all non-matched cards
     const $cards = $('.card').not('.matched');
@@ -251,7 +268,6 @@ $(document).ready(() => {
       $cards.removeClass('flip powerup');
     }, 3000);
   });
-
 
   // Initialize header counts
   updateStatus();
